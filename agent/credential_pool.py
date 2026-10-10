@@ -1231,8 +1231,11 @@ class CredentialPool(CredentialPoolAdminMixin):
             return entry
         display = spec[0]
         is_codex = self.provider == "openai-codex"
-        sources = ("device_code", "manual:device_code") if is_codex else ("device_code",)
-        if entry.source not in sources:
+        # Only the singleton-seeded row shadows ``providers.<id>.tokens``. A ``manual:device_code``
+        # row is an independent grant (often a DIFFERENT account); adopting the singleton's
+        # rotation into it silently rewrites that account's tokens with the singleton account's,
+        # which is how one email ended up on every pooled label.
+        if entry.source != "device_code":
             return entry
         try:
             with _auth_store_lock():
